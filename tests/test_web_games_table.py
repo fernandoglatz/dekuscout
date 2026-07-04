@@ -128,3 +128,37 @@ def test_games_table_bestbuy_filter(client, monkeypatch):
     html = client.get("/api/games-table?bestbuy=us").get_data(as_text=True)
     assert "/items/us-win" in html
     assert "/items/br-win" not in html
+
+
+def test_annotate_performance_base_and_sw2(temp_db):
+    from app.db import save_performance_cache
+    from app.web import _annotate_performance
+
+    save_performance_cache({
+        "arms": {"fps": 60, "label": "60fps", "patch_type": "Free Update"},
+        "plain game": {"fps": 30, "label": "30fps", "patch_type": "Unpatched"},
+    }, temp_db)
+
+    games = [
+        {"name": "ARMS", "switch2": False},          # SW2 via patch_type
+        {"name": "Plain Game", "switch2": False},    # base fps, no SW2
+        {"name": "Sw2 Flagged", "switch2": True},    # not in sheet -> blank
+    ]
+    _annotate_performance(games, temp_db)
+
+    assert games[0]["perf_label"] == "60fps" and games[0]["perf_sw2"] is True
+    assert games[0]["perf_sort"] == 60
+    assert games[1]["perf_label"] == "30fps" and games[1]["perf_sw2"] is False
+    assert games[2]["perf_label"] == "" and games[2]["perf_sort"] == 0
+    assert games[2]["perf_sw2"] is False
+
+
+def test_annotate_performance_sw2_flag_from_dekudeals(temp_db):
+    from app.db import save_performance_cache
+    from app.web import _annotate_performance
+
+    save_performance_cache(
+        {"g": {"fps": 30, "label": "30fps", "patch_type": "Unpatched"}}, temp_db)
+    games = [{"name": "G", "switch2": True}]  # DekuDeals says SW2 version exists
+    _annotate_performance(games, temp_db)
+    assert games[0]["perf_sw2"] is True

@@ -551,3 +551,41 @@ def test_parse_platforms_missing_line():
 def test_parse_platforms_no_details():
     from app.scraper import _parse_platforms
     assert _parse_platforms("<html><body>nope</body></html>") == {"switch1": False, "switch2": False}
+
+
+def test_refresh_performance_saves_on_success(temp_db, monkeypatch):
+    import app.scraper as scraper
+
+    monkeypatch.setattr(scraper, "fetch_performance_sheet",
+                        lambda **kw: {"arms": {"fps": 60, "label": "60fps", "patch_type": ""}})
+    saved = {}
+    monkeypatch.setattr(scraper, "save_performance_cache",
+                        lambda rows, db: saved.update(rows))
+    scraper._refresh_performance(temp_db, user_agent="x")
+    assert saved["arms"]["fps"] == 60
+
+
+def test_refresh_performance_swallows_errors(temp_db, monkeypatch):
+    import app.scraper as scraper
+
+    def boom(**kw):
+        raise RuntimeError("network down")
+
+    called = {"saved": False}
+    monkeypatch.setattr(scraper, "fetch_performance_sheet", boom)
+    monkeypatch.setattr(scraper, "save_performance_cache",
+                        lambda rows, db: called.update(saved=True))
+    # Must not raise, and must not save (so previous cache is preserved).
+    scraper._refresh_performance(temp_db, user_agent="x")
+    assert called["saved"] is False
+
+
+def test_refresh_performance_skips_empty(temp_db, monkeypatch):
+    import app.scraper as scraper
+
+    monkeypatch.setattr(scraper, "fetch_performance_sheet", lambda **kw: {})
+    called = {"saved": False}
+    monkeypatch.setattr(scraper, "save_performance_cache",
+                        lambda rows, db: called.update(saved=True))
+    scraper._refresh_performance(temp_db, user_agent="x")
+    assert called["saved"] is False

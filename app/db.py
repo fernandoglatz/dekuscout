@@ -148,6 +148,34 @@ def save_price_history_cache(slug: str, currency: str, data: dict, db_path: str)
         conn.commit()
 
 
+def save_performance_cache(rows: dict, db_path: str) -> None:
+    """Replace the performance cache with the given {norm_name: {fps,label,patch_type}}."""
+    ts = time.time()
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("DELETE FROM performance_cache")
+        conn.executemany(
+            "INSERT OR REPLACE INTO performance_cache"
+            " (norm_name, fps, label, patch_type, fetched_at) VALUES (?,?,?,?,?)",
+            [
+                (k, v.get("fps", 0), v.get("label", ""), v.get("patch_type", ""), ts)
+                for k, v in rows.items()
+            ],
+        )
+        conn.commit()
+
+
+def load_performance_cache(db_path: str) -> dict:
+    """Return {norm_name: {'fps','label','patch_type'}}. Empty dict if table absent."""
+    try:
+        with sqlite3.connect(db_path) as conn:
+            rows = conn.execute(
+                "SELECT norm_name, fps, label, patch_type FROM performance_cache"
+            ).fetchall()
+        return {r[0]: {"fps": r[1], "label": r[2], "patch_type": r[3]} for r in rows}
+    except sqlite3.OperationalError:
+        return {}
+
+
 def get_config(key: str, db_path: Optional[str] = None) -> Optional[str]:
     """Retrieve a config value from the database."""
     with sqlite3.connect(db_path or DB_FILE) as conn:

@@ -20,9 +20,11 @@ from app.db import (
     get_cached_price_history,
     get_config,
     load_games_cache,
+    load_performance_cache,
     save_price_history_cache,
     set_config,
 )
+from app.performance import normalize_name
 from app.exchange import fetch_rate
 from app.scraper import _content_type_to_ext, _icon_path, _make_headers, download_icons, fetch_all_games
 from app.user import get_db_path, get_user_email
@@ -247,6 +249,28 @@ def _compute_best_buy(games: list[dict], selected_locales: list[str], reference_
         g["sale_end"] = sale_ends.get(effective, g.get("sale_end", ""))
 
 
+_SW2_PATCH_TYPES = {"Switch 2 Edition", "Free Update"}
+
+
+def _annotate_performance(games: list[dict], db_path: str) -> None:
+    """Set perf_label/perf_sort/perf_sw2 on each game from performance_cache.
+
+    Smart column: show the sheet's fps; mark perf_sw2 when a genuine Switch 2
+    version exists (DekuDeals switch2 flag OR a Switch 2 patch type).
+    """
+    perf = load_performance_cache(db_path)
+    for g in games:
+        row = perf.get(normalize_name(g.get("name", "")))
+        if not row:
+            g["perf_label"] = ""
+            g["perf_sort"] = 0
+            g["perf_sw2"] = False
+            continue
+        g["perf_label"] = row["label"]
+        g["perf_sort"] = row["fps"]
+        g["perf_sw2"] = bool(g.get("switch2")) or row.get("patch_type") in _SW2_PATCH_TYPES
+
+
 @web_bp.route("/")
 def index():
     db_path = get_db_path()
@@ -317,6 +341,7 @@ def index():
             exchange_rates[locale] = fetch_rate(locale, reference_locale)
 
     _compute_best_buy(games, selected_locales, reference_locale)
+    _annotate_performance(games, db_path)
 
     on_sale = sum(1 for g in games if g.get("has_discount"))
     unavailable = sum(1 for g in games if g.get("all_unavailable"))
@@ -380,6 +405,7 @@ def api_games_table():
     else:
         _compute_best_buy(games, selected_locales, reference_locale)
         games = _filter_games(games, request.args)
+        _annotate_performance(games, db_path)
 
     return render_template(
         "components/games_rows.html",

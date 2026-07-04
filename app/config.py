@@ -52,6 +52,10 @@ ICONS_DIR = os.path.abspath(os.path.join(DATA_DIR, "icons"))
 CACHE_TTL = 30 * 60
 HISTORY_CACHE_TTL = 6 * 60 * 60
 
+# Community FPS/performance source (public Google Sheet, fetched as CSV via gviz).
+PERFORMANCE_SHEET_ID = os.environ.get("PERFORMANCE_SHEET_ID", "1sOYZRiOuD9Cnr-e_hlzhRuxuEq5X5Ptwq4yCfwxyfFk")
+PERFORMANCE_SHEET_GID = os.environ.get("PERFORMANCE_SHEET_GID", "0")
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Linux x86_64) "

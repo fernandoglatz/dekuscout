@@ -199,6 +199,10 @@
     .c-green   { color: var(--green); }
     .c-yellow  { color: var(--yellow); }
     .rel-date  { color: var(--text-muted); font-size: .78rem; white-space: nowrap; }
+    .perf { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .perf-s2 { font-size: .62rem; font-weight: 700; color: var(--accent);
+               border: 1px solid var(--accent); border-radius: 3px;
+               padding: 0 .2rem; vertical-align: middle; }
     .ph-trigger { cursor: help; }
     #ph-popup {
       background: var(--surface); border: 1px solid var(--border);
@@ -403,6 +407,7 @@
           {% if selected_locales|length > 1 %}
           <th data-type="price" data-best-buy-col="1" data-i18n="th.bestBuy">Best Buy</th>
           {% endif %}
+          <th data-type="num" data-i18n="th.performance">FPS</th>
           <th data-type="date" data-i18n="th.releaseDate">Release Date</th>
           <th data-type="date" data-i18n="th.saleEnds">Sale Ends</th>
         </tr>
@@ -577,6 +582,7 @@ window.I18n = (function () {
     if (th.dataset.bestBuyCol) return 'bestbuy';
     if (th.dataset.locale) return 'price:' + th.dataset.locale;
     if (th.dataset.i18n === 'th.game') return 'game';
+    if (th.dataset.i18n === 'th.performance') return 'perf';
     if (th.dataset.i18n === 'th.releaseDate') return 'reldate';
     if (th.dataset.i18n === 'th.saleEnds') return 'saleends';
     return 'col' + i;
@@ -646,7 +652,8 @@ window.I18n = (function () {
       var av = a.cells[colIdx] ? (a.cells[colIdx].dataset.sort || a.cells[colIdx].textContent.trim()) : '';
       var bv = b.cells[colIdx] ? (b.cells[colIdx].dataset.sort || b.cells[colIdx].textContent.trim()) : '';
       var cmp = 0;
-      if (type === 'price') { cmp = (parsePrice(av) - parsePrice(bv)) * dir; }
+      if (type === 'num') { cmp = (parseFloat(av) - parseFloat(bv)) * dir; }
+      else if (type === 'price') { cmp = (parsePrice(av) - parsePrice(bv)) * dir; }
       else if (type === 'date') {
         var ad = a.cells[colIdx] ? (a.cells[colIdx].dataset.date || av) : av;
         var bd = b.cells[colIdx] ? (b.cells[colIdx].dataset.date || bv) : bv;

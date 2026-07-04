@@ -9,8 +9,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from app.config import COUNTRIES, DB_FILE, HEADERS, ICONS_DIR, LOCALE_URL, NO_DECIMAL_ISOS, WISHLIST_URL
-from app.db import load_cookies, save_cookies, save_games_cache
+from app.db import load_cookies, save_cookies, save_games_cache, save_performance_cache
 from app.parsing import parse_release_date, parse_sale_end
+from app.performance import fetch_performance_sheet
 
 log = logging.getLogger(__name__)
 
@@ -407,6 +408,23 @@ def _fetch_eshop_prices(
     log.info("_fetch_eshop_prices: done (locale=%s)", locale)
 
 
+def _refresh_performance(db_path: str, user_agent: str = None) -> None:
+    """Best-effort: fetch+parse the community FPS sheet and save it. Outage-safe.
+
+    Only overwrites performance_cache on a successful, non-empty fetch, so a
+    transient sheet outage keeps the previous data instead of blanking it.
+    """
+    try:
+        rows = fetch_performance_sheet(user_agent=user_agent)
+        if rows:
+            save_performance_cache(rows, db_path)
+            log.info("_refresh_performance: saved %d entries", len(rows))
+        else:
+            log.warning("_refresh_performance: sheet parsed to 0 rows, keeping previous cache")
+    except Exception as exc:
+        log.warning("_refresh_performance: failed, keeping previous cache: %s", exc)
+
+
 def fetch_all_games(
     db_path: str = DB_FILE,
     wishlist_url: str = None,
@@ -469,6 +487,9 @@ def fetch_all_games(
     icon_exts = download_icons(games, user_agent=user_agent)
     for g in games:
         g["icon_ext"] = icon_exts.get(g["slug"], "")
+    if on_progress:
+        on_progress("performance", None, None, None)
+    _refresh_performance(db_path, user_agent=user_agent)
     ts = save_games_cache(games, db_path)
     log.info("fetch_all_games: done in %.2fs", time.monotonic() - t_start)
     return games, ts

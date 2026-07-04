@@ -14,7 +14,7 @@ def test_run_migrations_creates_all_tables(tmp_path):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '_yoyo%'"
             )
         }
-    assert tables == {"cookies", "games_cache", "price_history_cache", "config", "yoyo_lock", "sqlite_sequence"}
+    assert tables == {"cookies", "games_cache", "price_history_cache", "config", "performance_cache", "yoyo_lock", "sqlite_sequence"}
 
 
 def test_run_migrations_idempotent(tmp_path):

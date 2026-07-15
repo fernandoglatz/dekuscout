@@ -262,7 +262,7 @@ def _annotate_performance(games: list[dict], db_path: str) -> None:
     for g in games:
         row = perf.get(normalize_name(g.get("name", "")))
         if not row:
-            g["perf_label"] = ""
+            g["perf_label"] = "—"
             g["perf_sort"] = 0
             g["perf_sw2"] = False
             continue

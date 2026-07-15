@@ -142,14 +142,14 @@ def test_annotate_performance_base_and_sw2(temp_db):
     games = [
         {"name": "ARMS", "switch2": False},          # SW2 via patch_type
         {"name": "Plain Game", "switch2": False},    # base fps, no SW2
-        {"name": "Sw2 Flagged", "switch2": True},    # not in sheet -> blank
+        {"name": "Sw2 Flagged", "switch2": True},    # not in sheet -> dash
     ]
     _annotate_performance(games, temp_db)
 
     assert games[0]["perf_label"] == "60fps" and games[0]["perf_sw2"] is True
     assert games[0]["perf_sort"] == 60
     assert games[1]["perf_label"] == "30fps" and games[1]["perf_sw2"] is False
-    assert games[2]["perf_label"] == "" and games[2]["perf_sort"] == 0
+    assert games[2]["perf_label"] == "—" and games[2]["perf_sort"] == 0
     assert games[2]["perf_sw2"] is False
 
 

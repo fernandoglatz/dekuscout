@@ -42,7 +42,7 @@
   </td>
   {% endif %}
   <td class="perf" data-sort="{{ g.perf_sort }}">
-    {%- if g.perf_label -%}{{ g.perf_label }}{% if g.perf_sw2 %} <span class="perf-s2">S2</span>{% endif %}{%- endif -%}
+    {%- if g.perf_label == '—' -%}<span class="perf-na">—</span>{% else %}{{ g.perf_label }}{% if g.perf_sw2 %} <span class="perf-s2">S2</span>{% endif %}{% endif -%}
   </td>
   <td class="rel-date" data-date="{{ g.release_date }}"></td>
   <td class="sale-end" data-date="{{ g.sale_end }}"></td>

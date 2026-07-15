@@ -385,7 +385,7 @@ def test_fetch_eshop_prices_replaces_amazon_price_with_eshop(monkeypatch):
     assert games[0]["sale_end"] == ""
 
 
-def test_fetch_eshop_prices_skips_unavailable_games(monkeypatch):
+def test_fetch_eshop_prices_includes_unavailable_for_platforms(monkeypatch):
     from app.scraper import _fetch_eshop_prices
     import requests
 
@@ -395,7 +395,10 @@ def test_fetch_eshop_prices_skips_unavailable_games(monkeypatch):
         def get(self, url, **kwargs):
             fetch_called.append(url)
             class R:
-                text = "<html></html>"
+                text = """<html><body>
+                <ul class="details"><li class="list-group-item">
+                <strong>Platforms:</strong>Nintendo Switch 2</li></ul>
+                </body></html>"""
                 def raise_for_status(self): pass
             return R()
 
@@ -405,7 +408,9 @@ def test_fetch_eshop_prices_skips_unavailable_games(monkeypatch):
               "discount": "", "sale_end": ""}]
     _fetch_eshop_prices(games, "us", _FakeSession())
 
-    assert fetch_called == []
+    assert fetch_called == ["https://www.dekudeals.com/items/upcoming-game"]
+    assert games[0]["switch2"] is True
+    assert games[0]["switch1"] is False
 
 
 def test_fetch_eshop_prices_retries_on_429(monkeypatch):

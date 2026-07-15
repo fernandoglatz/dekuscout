@@ -159,8 +159,8 @@ def merge_prices(games_by_locale: dict[str, list[dict]], reference_locale: str) 
                     "switch1": g.get("switch1", False),
                     "switch2": g.get("switch2", False),
                 }
-            # Platform flags only come from item pages of available games; OR across
-            # locales so a game classified in any locale keeps its flags.
+            # Platform flags come from item pages; OR across locales so a game
+            # classified in any locale keeps its flags.
             meta_by_name[name]["switch1"] = meta_by_name[name].get("switch1", False) or g.get("switch1", False)
             meta_by_name[name]["switch2"] = meta_by_name[name].get("switch2", False) or g.get("switch2", False)
             if locale == reference_locale:
@@ -334,18 +334,17 @@ def _fetch_eshop_prices(
     The wishlist shows the best price across all stores (eShop, Amazon, etc.). This
     function replaces those prices with eShop-only prices so retail discounts are ignored.
     """
-    to_fetch = [g for g in games if g.get("current", "Unavailable") != "Unavailable"]
-    if not to_fetch:
+    if not games:
         return
 
     cookies = [(c.name, c.value, c.domain, c.path) for c in session.cookies]
     headers = _make_headers(user_agent)
-    total = len(to_fetch)
+    total = len(games)
     log.info("_fetch_eshop_prices: fetching %d item pages (locale=%s)", total, locale)
 
     delay = 0.01
     results = []
-    for i, game in enumerate(to_fetch):
+    for i, game in enumerate(games):
         slug = game["slug"]
         while True:
             try:
@@ -377,7 +376,7 @@ def _fetch_eshop_prices(
         if on_progress:
             on_progress(i + 1, total)
 
-    slug_to_game = {g["slug"]: g for g in to_fetch}
+    slug_to_game = {g["slug"]: g for g in games}
     for slug, eshop, platforms in results:
         game = slug_to_game.get(slug)
         if not game:
